@@ -1,0 +1,69 @@
+Practical Machine Learning
+========================================================
+## Synopsis
+This project is to predict the manner in which participants performed barbell lifts. The data was collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. The "classe" variable in the training set records how participants perform the exercise correctly and incorrectly in 5 different ways.
+
+## Data Processing
+First, we download the training and testing datasets.
+```{r}
+
+training <- read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), na.strings=c("NA","#DIV/0!", ""))
+testing <- read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), na.strings=c("NA","#DIV/0!", ""))
+
+```
+By checking the summary of testing and training datasets, we found many variables contain a huge proportion of NA's. So we would like to exclude those variables from our analysis.
+```{r}
+library(caret)
+train<-training[, -c(nearZeroVar(testing))]
+test<-testing[, -c(nearZeroVar(testing))]
+dim(train); dim(test)
+```
+Moreover, the first 6 variables are information about user name and timestamp, which are not relevant to performance of exercise, so we excluded them as well.
+```{r}
+train<-train[, -c(1:6)]
+test<-test[, -c(1:6)]
+dim(train); dim(test)
+```
+We have 19622 observations in train dataset, but only 20 observations in test dataset. In order to avoid overfitting and test our algorithms with cross-validation, we partition the train dataset into 2 parts: myTrain(75%) and myTest(25%) and test our algorithms on myTest to get the out of sample error.
+```{r}
+set.seed(32247)
+inTrain <- createDataPartition(y=train$classe, p=0.75, list=FALSE)
+myTrain <- train[inTrain, ]; myTest <- train[-inTrain, ]
+dim(myTrain); dim(myTest)
+```
+
+## Machine Learning Models
+We would like to try two machine learning algorithms for the data: Decision Tree and Random Forests.
+Since different variables have different scales, so we would like to standardize them to make them less skewed.
+```{r}
+fit1<-train(classe~., preProcess=c("center","scale"),method="rpart",data=myTrain)
+pred1<-predict(fit1, myTest)
+confusionMatrix(myTest$classe, pred1)
+library(rattle)
+fancyRpartPlot(fit1$finalModel)
+```
+
+The accuracy is only 49.18%, which is not very good. Next, let's try random forests.
+```{r}
+fit2<-train(classe~., preProcess=c("center","scale"),method="rf",data=myTrain)
+pred2<-predict(fit2, myTest)
+confusionMatrix(myTest$classe, pred2)
+```
+The accuracy is 99.06%, so the **expected out of sample error is 0.94%**. So random forest algorithm performed much better than decision tree.
+
+## Prediction Results
+Now we use the random forest model to predict the 20 test cases and submit the results.
+
+```{r}
+pred<-predict(fit2, test)
+pred
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(pred)
+```
+
