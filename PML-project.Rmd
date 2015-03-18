@@ -6,8 +6,10 @@ This project is to predict the manner in which participants performed barbell li
 ## Data Processing
 First, we download the training and testing datasets.
 ```{r}
+opts_chunk$set(cache = TRUE)
 
-training <- read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), na.strings=c("NA","#DIV/0!", ""))
+training <- read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), 
+                        na.strings=c("NA","#DIV/0!", ""))
 testing <- read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), na.strings=c("NA","#DIV/0!", ""))
 
 ```
@@ -42,14 +44,13 @@ confusionMatrix(myTest$classe, pred1)
 library(rattle)
 fancyRpartPlot(fit1$finalModel)
 ```
-
 The accuracy is only 49.18%, which is not very good. Next, let's try random forests.
 ```{r}
 fit2<-train(classe~., preProcess=c("center","scale"),method="rf",data=myTrain)
 pred2<-predict(fit2, myTest)
 confusionMatrix(myTest$classe, pred2)
 ```
-The accuracy is 99.06%, so the **expected out of sample error is 0.94%**. So random forest algorithm performed much better than decision tree.
+The accuracy is 99.12%, so the **expected out of sample error is 0.88%**. So random forest algorithm performed much better than decision tree.
 
 ## Prediction Results
 Now we use the random forest model to predict the 20 test cases and submit the results.
